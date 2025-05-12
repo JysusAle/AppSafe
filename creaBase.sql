@@ -28,7 +28,7 @@ go
 CREATE TABLE PERSONA.USUARIO(
     ID_USUARIO               int               NOT NULL		IDENTITY(1,1),		
     ID_USUARIO_RECOMIENDA    int               NULL,
-    TIPO_CLIENTE             char(1)           NOT NULL,
+    TIPO_USUARIO             char(1)           NOT NULL,
     NOMBRE_PILA              varchar(40)       NOT NULL,
     APELLIDOM                varchar(40)       NULL,
     APELLIDOP                varchar(40)       NOT NULL,
@@ -43,14 +43,26 @@ CREATE TABLE PERSONA.USUARIO(
     	ON UPDATE CASCADE,
     CONSTRAINT AK_NOMBRE_USUARIO UNIQUE (NOMBRE_USUARIO),
     CONSTRAINT AK_CORREO UNIQUE (CORREO),
-    CONSTRAINT AK_NUMERO_CELULAR UNIQUE (NUMERO_CELULAR),
-    CONSTRAINT CK9 CHECK (LEN(CLAVE_ACCESO)=10 
+    CONSTRAINT AK_TELEFONO UNIQUE (NUMERO_CELULAR),
+    CONSTRAINT CK9 CHECK (LEN(CLAVE_ACCESO)=10
     AND CLAVE_ACCESO COLLATE Latin1_General_BIN LIKE '%[A-Z]%'
     AND CLAVE_ACCESO LIKE '%[0-9]%' 
     AND CLAVE_ACCESO LIKE '%[*#$]%'
-    AND CLAVE_ACCESO NOT LIKE '%[^a-zA-Z0-9*#$]%')
+    AND CLAVE_ACCESO NOT LIKE '%[^a-zA-Z0-9*#$]%'),
+	CONSTRAINT CK_TIPO_USER CHECK (TIPO_USUARIO IN ('A','CH','C'))
+
+    --insert para que se vea el funcionamiento
 );
 go
+
+CREATE TABLE BANCO(
+
+	ID_BANCO			SMALLINT			NOT NULL,
+	NOMBRE_BANCO		VARCHAR(40)			NOT NULL
+
+	CONSTRAINT PK_BANCO PRIMARY  KEY (ID_BANCO)
+);
+GO
 
 CREATE TABLE INTERACCION.TARJETA(
     ID_TARJETA               int               NOT NULL     IDENTITY(1,1),  
@@ -73,7 +85,7 @@ CREATE TABLE INTERACCION.FACTURA(
     RFC                      varchar(13)       NOT NULL,
     FECHA_FACTURA            date              NOT NULL,
     IMPORTE_TOTAL            money             NOT NULL,
-    DIRECCION_FACTURACION    varchar(10)       NOT NULL,
+    DIRECCION_FACTURACION    varchar(150)       NOT NULL,  
     CONSTRAINT PK_FACTURA PRIMARY KEY CLUSTERED (ID_FACTURA),
     CONSTRAINT FK_USUARIO_FACTURA FOREIGN KEY (ID_USUARIO) REFERENCES PERSONA.USUARIO(ID_USUARIO)
     	ON DELETE CASCADE
@@ -124,12 +136,12 @@ CREATE TABLE PAGO(
     CONSTRAINT FK_CONDUCTOR_PAGO FOREIGN KEY (ID_USUARIO) REFERENCES PERSONA.CONDUCTOR(ID_USUARIO)
     	ON DELETE CASCADE
     	ON UPDATE CASCADE,
-    CONSTRAINT PK_TELEFONO PRIMARY KEY CLUSTERED (NUM_PAGO ASC,ID_USUARIO ASC)
+    CONSTRAINT PK_PAGO PRIMARY KEY CLUSTERED (NUM_PAGO ASC,ID_USUARIO ASC)
 );
 go
 
 CREATE TABLE MARCA(
-    ID_MARCA    			 smallint          NOT NULL		IDENTITY(1,1),
+    ID_MARCA    			 TINYINT           NOT NULL		IDENTITY(1,1),  
     MARCA       			 varchar(40)       NOT NULL,
     CONSTRAINT PK_MARCA PRIMARY KEY CLUSTERED (ID_MARCA),
     CONSTRAINT AK_MARCA UNIQUE (MARCA)
@@ -137,8 +149,8 @@ CREATE TABLE MARCA(
 go
 
 CREATE TABLE MODELO(
-    ID_MODELO    			 int               NOT NULL		IDENTITY(1,1),
-    ID_MARCA     			 smallint          NOT NULL,
+    ID_MODELO    			 smallint          NOT NULL		IDENTITY(1,1),
+    ID_MARCA     			 tinyint          NOT NULL,
     MODELO       			 varchar(40)       NOT NULL,
     CONSTRAINT PK_MODELO PRIMARY KEY CLUSTERED (ID_MODELO),
     CONSTRAINT FK_MARCA_MODELO FOREIGN KEY (ID_MARCA) REFERENCES MARCA(ID_MARCA)
@@ -151,9 +163,9 @@ go
 CREATE TABLE AUTO(
     ID_AUTO            		 int    		   NOT NULL		IDENTITY(1,1),
    	ID_USUARIO 		 		 int               NOT NULL,
-    ID_MODELO          		 int               NOT NULL,
+    ID_MODELO          		 smallint          NOT NULL,
     NUMPLACA          		 varchar(6)        NOT NULL,
-    AÑO              	 	 date              NOT NULL,
+    AÑO              	 	 numeric (4,0)     NOT NULL,
     DISPONIBLE         		 bit               NOT NULL,
     CONSTRAINT PK_AUTO PRIMARY KEY CLUSTERED (ID_AUTO),
     CONSTRAINT FK_CONDUCTOR_AUTO FOREIGN KEY (ID_USUARIO) REFERENCES PERSONA.CONDUCTOR(ID_USUARIO)
@@ -166,12 +178,10 @@ CREATE TABLE AUTO(
 );
 go
 
---Trigger que valida la cantidad de autos 
-
 CREATE TABLE INTERACCION.QUEJA(
     ID_QUEJA                 int               NOT NULL        IDENTITY(1,1),
     ID_USUARIO               int               NOT NULL,
-    ID_AUTO                  Int			   NOT NULL,
+    ID_AUTO                  int               NOT NULL,
     ID_ADMINISTRADOR         int               NOT NULL,
     TITULO                   varchar(40)       NOT NULL,
     FECHA_EMISION            date              NOT NULL,
@@ -188,11 +198,9 @@ CREATE TABLE INTERACCION.QUEJA(
 );
 go
 
---Trigger que verifica que una queja no es solucionada por quien la hizo
-
 CREATE TABLE RESOLUCION(
     ID_SOL                   int               NOT NULL        IDENTITY(1,1),
-    ID_QUEJA                 int		       NOT NULL,
+    ID_QUEJA                 int               NOT NULL,
     DESCRIPCION_RESOLUCION   varchar(60)       NOT NULL,
     FECHA_ATENDIDO           date              NOT NULL,
     CONSTRAINT PK_RESOLUCION PRIMARY KEY CLUSTERED (ID_SOL),
@@ -223,6 +231,7 @@ CREATE TABLE INTERACCION.DESCUENTO(
 );
 go
 
+--SCHEMA MUCHOS MUCHOS
 CREATE TABLE USUARIO_DESCUENTO(
     ID_USUARIO               int               NOT NULL,
     ID_DESCUENTO             numeric(10, 0)    NOT NULL,
@@ -232,7 +241,6 @@ CREATE TABLE USUARIO_DESCUENTO(
     CONSTRAINT FK_USUARIO_DESCUENTO FOREIGN KEY (ID_USUARIO) REFERENCES PERSONA.USUARIO(ID_USUARIO)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-
 );
 go
 
@@ -248,7 +256,7 @@ go
 CREATE TABLE RECORRIDO.VIAJE(
     ID_VIAJE                 int               NOT NULL        IDENTITY(1,1),
     ID_FACTURA               int		       NULL,
-    ID_AUTO                  int		       NOT NULL,
+    ID_AUTO                  int               NOT NULL,
     CLAVE_ACTUAL             smallint          NOT NULL,
     ID_USUARIO               int               NOT NULL,
     FECHA_SOLICITUD          datetime          NOT NULL,
@@ -282,7 +290,7 @@ CREATE TABLE RECORRIDO.BITACORA(
     ID_VIAJE                 int               NOT NULL,
     LATITUD                  varchar(15)       NOT NULL,
     LONGITUD                 varchar(15)       NOT NULL,
-    CONSTRAINT PK_BITACORA PRIMARY KEY CLUSTERED (CLAVE ASC),
+    CONSTRAINT PK_BITACORA PRIMARY KEY CLUSTERED (CLAVE),
     CONSTRAINT FK_VIAJE_BITACORA FOREIGN KEY (ID_VIAJE) REFERENCES RECORRIDO.VIAJE(ID_VIAJE)
         ON DELETE CASCADE
         ON UPDATE CASCADE

@@ -20,7 +20,7 @@ go
 
 -- Crea el trigger llamado 'trg_limitar_tarjetas' dentro del esquema PERSONA
 CREATE TRIGGER PERSONA.trg_limitar_tarjetas
-ON PERSONA.TARJETA
+ON INTERECCION.TARJETA
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -28,13 +28,13 @@ BEGIN
 
     DECLARE @UsuarioExcedido INT;
 
-    SELECT TOP 1 @UsuarioExcedido = i.ID_USUARIO
+    SELECT TOP 1 @UsuarioExcedido = i.ID_USUARIO -- NO ES NECESARIO EL TOP 1
     FROM INSERTED i
-    GROUP BY i.ID_USUARIO
+    GROUP BY i.ID_USUARIO -- VERIFICAR
     HAVING 
         (SELECT COUNT() 
          FROM PERSONA.TARJETA t 
-         WHERE t.ID_USUARIO = i.ID_USUARIO) + COUNT() > 3;
+         WHERE t.ID_USUARIO = i.ID_USUARIO) > 3; --verificar (quitar count)
 
     IF @UsuarioExcedido IS NOT NULL
     BEGIN
@@ -77,7 +77,7 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM INSERTED
-        WHERE AÑO < DATEADD(YEAR, -5, CAST(GETDATE() AS DATE))
+        WHERE AÑO < DATEADD(YEAR, -5, CAST(GETDATE() AS DATE))  -- getdate se puede como check
     )
     BEGIN
         RAISERROR('El auto no puede tener más de 5 años de antigüedad.', 16, 1);
@@ -94,7 +94,7 @@ go
 ---Trigger que  verifica que un administrador no resuelva su propia vida
 CREATE TRIGGER trg_queja_administrador
 ON QUEJA 
-AFTER UPDATE
+AFTER UPDATE  --FOR UPDATE
 AS
 BEGIN
 IF EXISTS(
@@ -110,8 +110,11 @@ IF EXISTS(
 END
 go
 
+
+
 ---Trigger que verifica que la solicitud de un auto no exceda mas de dos dias 
 
+--COMPROBAR QUE EL ESTUS ES PROGRAMADO
 CREATE TRIGGER CK7_trg_FechaSolicitud_NO_MAS_DE_DOS_DIAS
 ON VIAJE
 AFTER INSERT, UPDATE
@@ -130,6 +133,7 @@ END
 go
 
 ---Trigger que valida la transicion entre estatus
+
 
 CREATE OR ALTER TRIGGER TRG_ValidarTransicionEstatus
 ON RECORRIDO.ESTATUS_VIAJE
@@ -190,4 +194,3 @@ BEGIN
       ON v.ID_VIAJE = n.ID_VIAJE;
 END;
 go
-
