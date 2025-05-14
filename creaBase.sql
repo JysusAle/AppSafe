@@ -67,7 +67,7 @@ CREATE TABLE INTERACCION.TARJETA(
     NUM_TARJETA				 varchar(20)       NOT NULL,
     ID_USUARIO  			 int               NOT NULL,
     MES                      numeric(2, 0)     NOT NULL,
-    A�O                      numeric(4, 0)     NOT NULL,
+    year_tarjeta                      numeric(4, 0)     NOT NULL,
     ID_BANCO                 SMALLINT	       NOT NULL,
     CONSTRAINT PK_TARJETA PRIMARY KEY CLUSTERED (iD_TARJETA),
     CONSTRAINT AK_NUMTARJETA UNIQUE (NUM_TARJETA),
