@@ -18,73 +18,157 @@ validar el correcto funcionamiento de los triggers
 use [APPSAFE_TEAM_UNO_DE_TRES]
 go
 
+
+-----------------------------------------------------------------
+--El trigger trg_jerarquiaU tiene el propósito de validar cambios en el tipo de usuario en la tabla PERSONA.USUARIO
+
+CREATE TRIGGER trg_jerarquiaU
+ON PERSONA.USUARIO
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @UsuariosError NVARCHAR(100);
+    
+    WITH INVALIDOS AS (
+        SELECT u.ID_USUARIO
+        FROM PERSONA.USUARIO AS u
+        JOIN inserted as i
+        ON i.ID_USUARIO = u.ID_USUARIO
+		where u.TIPO_USUARIO != i.TIPO_USUARIO
+    )
+
+    SELECT @UsuariosError = STRING_AGG(CAST(ID_USUARIO AS NVARCHAR(5)), ', ')
+    FROM INVALIDOS;
+
+    IF @UsuariosError IS NOT NULL
+    BEGIN
+        ROLLBACK TRANSACTION;
+
+        DECLARE @MensajeError NVARCHAR(200);
+        SET @MensajeError = 'No puedes alterar el tipo de usuario de los siguientes usuarios: ' + @UsuariosError;
+        THROW 51008, @MensajeError, 1;
+        RETURN;
+    END;
+
+	UPDATE u
+    SET 
+		ID_USUARIO_RECOMIENDA = i.iD_USUARIO_RECOMIENDA,
+        TIPO_USUARIO = i.TIPO_USUARIO,
+        NOMBRE_PILA = i.NOMBRE_PILA,
+        APELLIDOM = i.APELLIDOM,
+        APELLIDOP = i.APELLIDOP,
+        CLAVE_ACCESO = i.CLAVE_ACCESO,
+        NUMERO_CELULAR = i.NUMERO_CELULAR,
+        NOMBRE_USUARIO = i.NOMBRE_USUARIO,
+        CORREO = i.CORREO,
+        FECHA_REGISTRO = i.FECHA_REGISTRO
+    FROM PERSONA.USUARIO u
+    JOIN INSERTED i
+    ON u.ID_USUARIO = i.ID_USUARIO;
+
+END;
+GO
+
+----------------COMPROBACION----------------------------
+
+INSERT INTO PERSONA.USUARIO VALUES (NULL, 'A', 'JESUS', 'MARTINEZ', 'TENORIO', '#324REG7$4', '5578290048', 'JESUS_MARTIN', 'JESUS@GAMAIL.COM', '2024-03-11');
+
+UPDATE PERSONA.USUARIO
+SET TIPO_USUARIO = 'D'
+WHERE ID_USUARIO = 3
+
+SELECT * FROM PERSONA.USUARIO
+
+--------------------------------------------------------
 -- Crea el trigger llamado 'trg_limitar_tarjetas' dentro del esquema INTERACCION
-CREATE TRIGGER INTERACCION.trg_limitar_tarjetas
-ON INTERACCION.TARJETA
+
+drop trigger INTERACCION.trg_limitando_tarjeta_a_3
+
+create trigger INTERACCION.trg_limitando_tarjeta_a_3
+on INTERACCION.TARJETA
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
+	DECLARE @TOTAL_TARJETAS INT;
+	DECLARE @MESSAGE_ERROR INT;
 
-    -- CTEs para nuevas y existentes
-    WITH Nuevos AS (
-        SELECT i.ID_USUARIO, COUNT(*) AS CantidadNuevas
-        FROM INSERTED i
-        GROUP BY i.ID_USUARIO
-    ),
-    Existentes AS (
-        SELECT t.ID_USUARIO, COUNT(*) AS CantidadExistentes
-        FROM INTERACCION.TARJETA t
-        GROUP BY t.ID_USUARIO
+	SELECT @TOTAL_TARJETAS = COUNT(*)
+	FROM INTERACCION.TARJETA t
+	JOIN INSERTED i
+	ON t.ID_USUARIO = i.ID_USUARIO;
+
+	IF @TOTAL_TARJETAS = 3
+	BEGIN 
+		SET @MESSAGE_ERROR = 'No se pueden tener mas de tres tarjetas'
+		ROLLBACK TRANSACTION;
+        THROW 51008, @MESSAGE_ERROR , 1;
+        RETURN;
+	END;
+
+	INSERT INTO INTERACCION.TARJETA (NUM_TARJETA, ID_USUARIO, MES, YEAR_TARJETA, ID_BANCO)
+    SELECT NUM_TARJETA, ID_USUARIO, MES, YEAR_TARJETA, ID_BANCO
+    FROM INSERTED;
+END
+
+		
+-----------------COMPROBACION----------------------------
+
+INSERT INTO INTERACCION.TARJETA (NUM_TARJETA, ID_USUARIO, MES, year_tarjeta, ID_BANCO) VALUES ('1234567890123456', 4, 3, 2025, 1);
+INSERT INTO INTERACCION.TARJETA (NUM_TARJETA, ID_USUARIO, MES, year_tarjeta, ID_BANCO) VALUES ('1234746390123456', 4, 2, 2025, 2);
+INSERT INTO INTERACCION.TARJETA (NUM_TARJETA, ID_USUARIO, MES, year_tarjeta, ID_BANCO) VALUES ('1234567828429956', 4, 5, 2025, 3);
+INSERT INTO INTERACCION.TARJETA (NUM_TARJETA, ID_USUARIO, MES, year_tarjeta, ID_BANCO) VALUES ('1234568797878956', 4, 9, 2025, 3);
+
+SELECT * FROM PERSONA.USUARIO
+
+-----------------------------------------------------------------------------------------------------------------
+
+-------
+
+CREATE TRIGGER trg_jerarquiaA
+ON PERSONA.ADMINISTRADOR
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+	DECLARE @UsuariosError NVARCHAR(100);
+	DECLARE @MensajeError NVARCHAR(100);
+
+    WITH INVALIDOS AS (
+        SELECT u.ID_USUARIO
+        FROM PERSONA.USUARIO AS u
+        JOIN INSERTED i
+        ON i.ID_USUARIO = u.ID_USUARIO
+        WHERE TIPO_USUARIO != 'A'
     )
-    -- 1) Verificar si algún usuario intenta insertar más de 3 tarjetas en un solo lote
-    DECLARE @UsuariosError NVARCHAR(100);
+
+
     SELECT @UsuariosError = STRING_AGG(CAST(ID_USUARIO AS NVARCHAR(5)), ', ')
-    FROM Nuevos
-    WHERE CantidadNuevas > 3;
+    FROM INVALIDOS
 
     IF @UsuariosError IS NOT NULL
     BEGIN
-        THROW 51001, CONCAT('Los siguientes usuarios intentan insertar más de 3 tarjetas: ', @UsuariosError), 1;
+        ROLLBACK TRANSACTION;
+        SET @MensajeError = 'No puedes crear como administradores los siguientes usuarios (no son tipo ''A''): ' + @UsuariosError;
+		THROW 51007, @MensajeError, 1;
         RETURN;
     END;
-
-    -- 2) Verificar si alguno ya tiene 3 o más tarjetas existentes
-    DECLARE @UsuariosConMaximas NVARCHAR(100);
-    SELECT @UsuariosConMaximas = STRING_AGG(CAST(n.ID_USUARIO AS NVARCHAR(5)), ', ')
-    FROM Nuevos n
-    JOIN Existentes e 
-    ON n.ID_USUARIO = e.ID_USUARIO
-    WHERE e.CantidadExistentes >= 3;
-
-    IF @UsuariosConMaximas IS NOT NULL
-    BEGIN
-        THROW 51001, CONCAT('Los siguientes usuarios ya tienen 3 tarjetas: ', @UsuariosConMaximas), 2;
-        RETURN;
-    END;
-
-    -- 3) Verificar que la suma de existentes + nuevas no supere 3
-    DECLARE @UsuariosSuperanTotal NVARCHAR(MAX);
-    SELECT @UsuariosSuperanTotal = STRING_AGG(CAST(n.ID_USUARIO AS NVARCHAR(10)), ', ')
-    FROM Nuevos n
-    LEFT JOIN Existentes e 
-    ON n.ID_USUARIO = e.ID_USUARIO
-    WHERE ISNULL(e.CantidadExistentes, 0) + n.CantidadNuevas > 3;
-
-    IF @UsuariosSuperanTotal IS NOT NULL
-    BEGIN
-        THROW 51001, CONCAT('Los siguientes usuarios superarán el total de 3 tarjetas tras la inserción: ', @UsuariosSuperanTotal), 3;
-        RETURN;
-    END;
-
-    -- Si pasa todas las validaciones, insertamos
-    INSERT INTO INTERACCION.TARJETA (NUM_TARJETA, ID_USUARIO, VIGENCIA, BANCO)
-    SELECT NUM_TARJETA, ID_USUARIO, VIGENCIA, BANCO
-    FROM INSERTED;
 END;
 GO
 
------------------------------------------------------------------------------------------------------------------
+-----------------COMPROBACION-----------------------------
+
+select * from persona.USUARIO
+
+delete persona.administrador where ID_USUARIO = 4
+
+insert into persona.ADMINISTRADOR values (4,'2024-01-02')
+insert into persona.ADMINISTRADOR values (6,'2024-01-02')
+
+-------------------------------------------------------
+
 --- Limitar numero de autos por conductor a 2
 
 CREATE TRIGGER trg_validar_auto
@@ -141,6 +225,7 @@ GO
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
+--Este trigger verifica que un administrador no pueda actualizar quejas relacionadas consigo mismo
 CREATE TRIGGER trg_queja_administrador
 ON INTERACCION.QUEJA 
 AFTER UPDATE
@@ -287,7 +372,7 @@ CREATE TRIGGER trg_jerarquiaC
 ON PERSONA.CONDUCTOR
 AFTER INSERT
 AS
-BEGI
+BEGIN
 
     SET NOCOUNT ON;
 
@@ -312,69 +397,6 @@ BEGI
 END;
 GO
 
-------------
-
-CREATE TRIGGER trg_jerarquiaA
-ON PERSONA.ADMINISTRADOR
-AFTER INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    WITH INVALIDOS AS (
-        SELECT u.ID_USUARIO
-        FROM PERSONA.USUARIO AS u
-        JOIN INSERTED i
-        ON i.ID_USUARIO = u.ID_USUARIO
-        WHERE TIPO_USUARIO != 'A'
-    )
-
-    DECLARE @UsuariosError NVARCHAR(100);
-    SELECT @UsuariosError = STRING_AGG(CAST(ID_USUARIO AS NVARCHAR(5)), ', ')
-    FROM INVALIDOS
-
-    IF @UsuariosError IS NOT NULL
-    BEGIN
-        ROLLBACK TRANSACTION;
-        THROW 51007, CONCAT('No puedes crear como administradores los siguientes usuarios (no son tipo ''A''): ', @UsuariosError), 1;
-        RETURN;
-    END;
-END;
-GO
-
------------- 
-
-CREATE TRIGGER trg_jerarquiaU
-ON PERSONA.USUARIO
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    WITH INVALIDOS AS (
-        SELECT u.ID_USUARIO
-        FROM PERSONA.USUARIO AS u
-        JOIN INSERTED i
-        ON i.ID_USUARIO = u.ID_USUARIO
-        LEFT JOIN PERSONA.CONDUCTOR as c
-        ON u.ID_USUARIO = c.ID_USUARIO
-        LEFT JOIN PERSONA.ADMINISTRADOR as a
-        ON u.ID_USUARIO = a.ID_USUARIO
-        WHERE (c.ID_USUARIO IS NOT NULL OR a.ID_USUARIO IS NOT NULL) AND i.TIPO_USUARIO != u.TIPO_USUARIO;
-    )
-
-    DECLARE @UsuariosError NVARCHAR(100);
-    SELECT @UsuariosError = STRING_AGG(CAST(ID_USUARIO AS NVARCHAR(5)), ', ')
-    FROM INVALIDOS
-
-    IF @UsuariosError IS NOT NULL
-    BEGIN
-        ROLLBACK TRANSACTION;
-        THROW 51008, CONCAT('No puedes alterar el tipo de usuario de los siguientes usuarios: ', @UsuariosError), 1;
-        RETURN;
-    END;
-END;
-GO
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 

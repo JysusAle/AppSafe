@@ -50,10 +50,11 @@ CREATE TABLE PERSONA.USUARIO(
     AND CLAVE_ACCESO LIKE '%[0-9]%' 
     AND CLAVE_ACCESO LIKE '%[*#$]%'
     AND CLAVE_ACCESO NOT LIKE '%[^a-zA-Z0-9*#$]%'),
-	CONSTRAINT CK_TIPO_USER CHECK (TIPO_USUARIO IN ('A','CH','C'))
-
+	CONSTRAINT CK_TIPO_USER CHECK (TIPO_USUARIO IN ('A','D','C'))
+	--Donde A es de administrador, D es de driver o chofer y C es de cliente
     --insert para que se vea el funcionamiento
 );
+
 go
 
 CREATE TABLE BANCO(
