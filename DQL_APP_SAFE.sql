@@ -44,7 +44,7 @@ SELECT TOP 5
     usu.NOMBRE_PILA AS 'Nombre',
     usu.APELLIDOP AS 'Apellido Paterno',
     ISNULL(usu.APELLIDOM, 'sin apellido materno') AS 'Apellido Materno',
-    AVG(acept.CALIFICACION) AS 'Calificación Promedio'
+    AVG(acept.CALIFICACION_CONDUCTOR) AS 'Calificación Promedio'
 	FROM RECORRIDO.ACEPTADO AS acept
 	JOIN RECORRIDO.VIAJE AS viaje
 		ON acept.ID_VIAJE = viaje.ID_VIAJE
@@ -61,7 +61,7 @@ SELECT TOP 5
 		usu.APELLIDOM,
 		usu.ID_USUARIO
 	ORDER BY 
-		AVG(acept.CALIFICACION) DESC
+		AVG(acept.CALIFICACION_CONDUCTOR) DESC
 	
 --4. Top 5 de clientes, es decir, los clientes con mayor número de viajes (nombre completo y correo)
 
@@ -101,6 +101,46 @@ select top 5 usu.NOMBRE_PILA as 'Nombres',
 --día o un periodo de tiempo.
 
 
+--declare @fecha_inicio date='01-01-2023';
+--declare @fecha_fin date='01-02-2024';
+
+select
+	ac.FECHA_INCIDENTE as 'Fecha de Incidente',
+	dir.CIUDAD as 'Ciudad',
+	dir.CALLE as 'Calle',
+	dir.NUM_EXTERIOR as 'Número exterior',
+	tac.DESCRIPCION as 'Tipo de accidente',
+	CASE 
+		WHEN ac.HERIDOS=1 then 'Hubo Heridos'
+		ELSE 'Sin Heridos'
+	END as 'Presencia de Heridos',
+	ac.MONTO_GASTADO as 'Monto Gastado',
+	usu.NOMBRE_PILA as 'Nombres',
+	usu.APELLIDOP as 'Apellido Paterno',
+	usu.APELLIDOM as 'Apellido Materno',
+	MODELO.MODELO as 'Modelo automóvil',
+	CASE 
+		WHEN ac.CONDUCTOR_RESPONSABLE=1 then 'Responsable'
+		ELSE 'No Responsable'
+	END as 'Responsabilidad del Accidente'
+	from RECORRIDO.ACCIDENTE as ac
+		join DIRECCION as dir
+			on ac.UBICACION=dir.ID_DIRECCION
+		join RECORRIDO.TIPO_ACCIDENTE as tac
+			on tac.ID_TIPO_ACCIDENTE=ac.ID_TIPO_ACCIDENTE
+		join RECORRIDO.ACEPTADO as acept
+			on acept.ID_ACEPTADO=ac.ID_ACEPTADO
+		join RECORRIDO.VIAJE as vj
+			on vj.ID_VIAJE=acept.ID_VIAJE
+		join VEHICULO as coche
+			on coche.ID_VEHICULO=vj.ID_VEHICULO
+		join PERSONA.CONDUCTOR as driver
+			on driver.ID_USUARIO=coche.ID_USUARIO
+		join PERSONA.USUARIO as usu
+			on usu.ID_USUARIO=driver.ID_USUARIO
+		join MODELO 
+			on MODELO.ID_MODELO=coche.ID_MODELO
+--	where ac.Fecha_Incidente between @Fecha_Inicio and $Fecha_Fin 
 
 --7. Listado de los clientes con menos estrellas
 
@@ -108,25 +148,31 @@ select top 5 usu.NOMBRE_PILA as 'Nombres',
 
 select 
     u.NOMBRE_PILA + ' ' + u.APELLIDOP AS 'Conductor',
-    SUM(CASE WHEN a.CALIFICACION = 1 THEN 1 ELSE 0 END) AS '1 Estrella',
-    SUM(CASE WHEN a.CALIFICACION = 2 THEN 1 ELSE 0 END) AS '2 Estrellas',
-    SUM(CASE WHEN a.CALIFICACION = 3 THEN 1 ELSE 0 END) AS '3 Estrellas',
-    SUM(CASE WHEN a.CALIFICACION = 4 THEN 1 ELSE 0 END) AS '4 Estrellas',
-    SUM(CASE WHEN a.CALIFICACION = 5 THEN 1 ELSE 0 END) AS '5 Estrellas',
+    SUM(CASE WHEN a.CALIFICACION_CONDUCTOR = 1 THEN 1 ELSE 0 END) AS '1 Estrella',
+    SUM(CASE WHEN a.CALIFICACION_CONDUCTOR = 2 THEN 1 ELSE 0 END) AS '2 Estrellas',
+    SUM(CASE WHEN a.CALIFICACION_CONDUCTOR = 3 THEN 1 ELSE 0 END) AS '3 Estrellas',
+    SUM(CASE WHEN a.CALIFICACION_CONDUCTOR = 4 THEN 1 ELSE 0 END) AS '4 Estrellas',
+    SUM(CASE WHEN a.CALIFICACION_CONDUCTOR = 5 THEN 1 ELSE 0 END) AS '5 Estrellas',
     COUNT(a.ID_ACEPTADO) AS 'Total Calificaciones',
-    AVG(a.CALIFICACION) AS 'Promedio'
+    AVG(a.CALIFICACION_CONDUCTOR) AS 'Promedio'
 	FROM RECORRIDO.ACEPTADO a
 		JOIN RECORRIDO.VIAJE v ON a.ID_VIAJE = v.ID_VIAJE
 		JOIN VEHICULO as veh ON v.ID_VEHICULO = veh.ID_VEHICULO
 		JOIN PERSONA.CONDUCTOR c ON veh.ID_USUARIO = c.ID_USUARIO
 		JOIN PERSONA.USUARIO u ON c.ID_USUARIO = u.ID_USUARIO
-	WHERE a.CALIFICACION IS NOT NULL
+	WHERE a.CALIFICACION_CONDUCTOR IS NOT NULL
 	GROUP BY u.ID_USUARIO, u.NOMBRE_PILA, u.APELLIDOP
-	ORDER BY AVG(a.CALIFICACION) DESC
+	ORDER BY AVG(a.CALIFICACION_CONDUCTOR) DESC
 
 --9. Listado de autos, placa, número de serie, marca, modelo, año y color y su dueño
 
-select NUMPLACA,mark.MARCA,model.MODELO,year_auto,usu.NOMBRE_PILA,usu.APELLIDOP,isnull(usu.APELLIDOM,'sin apellido materno') as 'Número de placa'
+select NUMPLACA as 'Número de placa',
+	mark.MARCA as 'Marca',
+	model.MODELO as 'Modelo',
+	year_auto as 'Año del auto',
+	usu.NOMBRE_PILA as 'Nombre conductor',
+	usu.APELLIDOP as 'Apellido Paterno',
+	isnull(usu.APELLIDOM,'sin apellido materno') as 'Apellido Materno'
 	from VEHICULO
 	join PERSONA.CONDUCTOR as driver
 		on VEHICULO.ID_USUARIO=driver.ID_USUARIO
@@ -140,4 +186,23 @@ select NUMPLACA,mark.MARCA,model.MODELO,year_auto,usu.NOMBRE_PILA,usu.APELLIDOP,
 --10. Listado de quejas incluyendo el conductor y auto, con filtro para obtenerse por un periodo de tiempo o por
 --conductor
 
-		
+
+
+select qm.descripcion as 'Queja',
+	usu.NOMBRE_PILA as 'Nombres',
+	usu.APELLIDOP as 'Apellido Paterno',
+	usu.APELLIDOM as 'Apellido Materno',
+	MODELO.MODELO as 'Modelo del coche'
+	FROM INTERACCION.QUEJA as q
+	join VEHICULO as v
+		on v.ID_VEHICULO=q.ID_VEHICULO
+	join PERSONA.USUARIO as usu
+		on v.ID_USUARIO=usu.ID_USUARIO
+	join QUEJA_MOTIVO as qm
+		on qm.id_motivo_queja=q.id_motivo_queja
+	join MODELO
+		on v.ID_MODELO=MODELO.ID_MODELO
+--	where ac.Fecha_Incidente between @Fecha_Inicio and $Fecha_Fin
+
+
+	
