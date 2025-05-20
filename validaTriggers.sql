@@ -84,8 +84,6 @@ SELECT * FROM PERSONA.USUARIO
 --------------------------------------------------------
 -- Crea el trigger llamado 'trg_limitar_tarjetas' dentro del esquema INTERACCION
 
-drop trigger INTERACCION.trg_limitando_tarjeta_a_3
-
 create trigger INTERACCION.trg_limitando_tarjeta_a_3
 on INTERACCION.TARJETA
 INSTEAD OF INSERT
@@ -217,8 +215,6 @@ INSERT INTO PERSONA.CONDUCTOR (ID_USUARIO, FECHA_VIGENCIA, DESCRIPCION, FOTO_REC
 
 --- Limitar numero de autos por conductor a 2
 
-DROP TRIGGER trg_validar_auto
-
 CREATE TRIGGER trg_validar_auto
 ON VEHICULO
 INSTEAD OF INSERT
@@ -269,8 +265,8 @@ BEGIN
     END;
 
     -- Si todo está correcto, hace el INSERT
-    INSERT INTO VEHICULO(NUM_SERIE_VEHICULO,ID_USUARIO, ID_MODELO, NUMPLACA, year_auto, DISPONIBLE, COLOR_VEHICULO)
-    SELECT NUM_SERIE_VEHICULO,ID_USUARIO, ID_MODELO, NUMPLACA, year_auto, DISPONIBLE, COLOR_VEHICULO
+    INSERT INTO VEHICULO(NUM_SERIE_VEHICULO,ID_USUARIO, ID_MODELO, NUM_PLACA, year_auto, DISPONIBLE, COLOR_VEHICULO)
+    SELECT NUM_SERIE_VEHICULO,ID_USUARIO, ID_MODELO, NUM_PLACA, year_auto, DISPONIBLE, COLOR_VEHICULO
     FROM INSERTED;
 END;
 GO
@@ -402,7 +398,7 @@ GO
 
 --- Triger que impida crear la tabla aceptado hasta que el estatus tome el valor de aceptado
 CREATE TRIGGER trg_aceptado
-ON ACEPTADO
+ON RECORRIDO.ACEPTADO
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -417,7 +413,7 @@ BEGIN
         WHERE NOMBRE_ESTATUS = "C" 
     )
 
-    DECLARE @NotAcept NVARCHAR(100);
+  
     SELECT @NotAcept = STRING_AGG(CAST(ID_VIAJE AS NVARCHAR(5)), ', ')
     FROM INSERTED i
     WHERE i.ID_VIAJE NOT IN (SELECT ID_VIAJE FROM USERS)
