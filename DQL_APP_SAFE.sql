@@ -33,13 +33,14 @@ select FORMAT(HORA_INICIO_CURSO,'mm-yyyy') as Fecha,
 	   DAY(HORA_INICIO_CURSO) as 'Día',
 	   SUM(IMPORTE) as 'Monto del Día',
 	   SUM(SUM(IMPORTE)) as 'Monto Mensual'
+	   where (CAST(HORA_INICIO_CURSO AS date) BETWEEN @fecha_inicio AND @fecha_fin)
 from RECORRIDO.ACEPTADO
 
 --3. Top 5 de conductores por un periodo de tiempo
 
---set @fecha_inicio
---set @fecha_fin
 
+declare @fecha_inicio date='01-01-2023';
+declare @fecha_fin date='01-02-2024';
 SELECT TOP 5 
     usu.NOMBRE_PILA AS 'Nombre',
     usu.APELLIDOP AS 'Apellido Paterno',
@@ -54,7 +55,7 @@ SELECT TOP 5
 		ON driver.ID_USUARIO = coche.ID_USUARIO
 	JOIN PERSONA.USUARIO AS usu
 		ON usu.ID_USUARIO = driver.ID_USUARIO
-	-- WHERE (CAST(FECHA_SOLICITUD AS date) BETWEEN @fecha_inicio AND @fecha_fin) 
+	WHERE (CAST(FECHA_SOLICITUD AS date) BETWEEN @fecha_inicio AND @fecha_fin) 
 	GROUP BY 
 		usu.NOMBRE_PILA,
 		usu.APELLIDOP,
@@ -101,9 +102,9 @@ select top 5 usu.NOMBRE_PILA as 'Nombres',
 --día o un periodo de tiempo.
 
 
---declare @fecha_inicio date='01-01-2023';
---declare @fecha_fin date='01-02-2024';
 
+declare @fecha_inicio date='01-01-2023';
+declare @fecha_fin date='01-02-2024';
 select
 	ac.FECHA_INCIDENTE as 'Fecha de Incidente',
 	dir.CIUDAD as 'Ciudad',
@@ -140,7 +141,7 @@ select
 			on usu.ID_USUARIO=driver.ID_USUARIO
 		join MODELO 
 			on MODELO.ID_MODELO=coche.ID_MODELO
---	where ac.Fecha_Incidente between @Fecha_Inicio and $Fecha_Fin 
+    	where ac.Fecha_Incidente between @Fecha_Inicio and $Fecha_Fin 
 
 --7. Listado de los clientes con menos estrellas
 
@@ -187,7 +188,8 @@ select NUMPLACA as 'Número de placa',
 --conductor
 
 
-
+declare @fecha_inicio date='01-01-2023';
+declare @fecha_fin date='01-02-2024';
 select qm.descripcion as 'Queja',
 	usu.NOMBRE_PILA as 'Nombres',
 	usu.APELLIDOP as 'Apellido Paterno',
@@ -202,7 +204,7 @@ select qm.descripcion as 'Queja',
 		on qm.id_motivo_queja=q.id_motivo_queja
 	join MODELO
 		on v.ID_MODELO=MODELO.ID_MODELO
---	where ac.Fecha_Incidente between @Fecha_Inicio and $Fecha_Fin
+	where ac.Fecha_Incidente between @Fecha_Inicio and $Fecha_Fin
 
 
 	
