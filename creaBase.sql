@@ -488,6 +488,7 @@ DROP TRIGGER RECORRIDO.trg_aceptado
 DROP TRIGGER INTERACCION.trg_queja_administrador
 DROP TRIGGER INTERACCION.trg_queja_relacion
 DROP TRIGGER trg_resolucion
+DROP TRIGGER RECORRIDO.trg_disponibilidad
 
 
 -- PERSONA.USUARIO
