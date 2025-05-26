@@ -880,7 +880,7 @@ INSERT INTO RESOLUCION (ID_QUEJA, DESCRIPCION_RESOLUCION, FECHA_ATENDIDO) VALUES
 
 CREATE TRIGGER trg_disponibilidad
 ON RECORRIDO.VIAJE
-AFTER INSERT, UPDATE
+INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -888,26 +888,36 @@ BEGIN
     DECLARE @VehiculosNoDisponibles NVARCHAR(MAX);
     DECLARE @MensajeError NVARCHAR(MAX);
 
+    -- Detecta los vehículos no disponibles
     WITH VehiculosNoDisponibles AS (
         SELECT i.ID_VEHICULO
         FROM INSERTED i
-        JOIN VEHICULO v
-        ON i.ID_VEHICULO = v.ID_VEHICULO
+        JOIN VEHICULO v ON i.ID_VEHICULO = v.ID_VEHICULO
         WHERE v.DISPONIBLE = 0
     )
-
     SELECT @VehiculosNoDisponibles = STRING_AGG(CAST(ID_VEHICULO AS NVARCHAR(10)), ', ')
     FROM VehiculosNoDisponibles;
 
+    -- Si hay vehículos no disponibles, lanza error
     IF @VehiculosNoDisponibles IS NOT NULL
     BEGIN
-        ROLLBACK TRANSACTION;
         SET @MensajeError = 'Los siguientes vehículos no están disponibles: ' + @VehiculosNoDisponibles;
         THROW 51012, @MensajeError, 1;
         RETURN;
-    END;
+    END
+
+    -- Si todo está bien, realiza el insert
+    INSERT INTO RECORRIDO.VIAJE (
+        ID_FACTURA, ID_VEHICULO, CLAVE_ACTUAL, ID_USUARIO, FECHA_SOLICITUD, LATITUD_DESTINO, LONGITUD_DESTINO,
+		LONGITUD_ORIGEN, LATITUD_ORIGEN, TIPO, TIPO_PAGO, TARJETA_CLIENTE
+    )
+    SELECT 
+        ID_FACTURA, ID_VEHICULO, CLAVE_ACTUAL, ID_USUARIO, FECHA_SOLICITUD, LATITUD_DESTINO, LONGITUD_DESTINO,
+		LONGITUD_ORIGEN, LATITUD_ORIGEN, TIPO, TIPO_PAGO, TARJETA_CLIENTE
+    FROM INSERTED;
 END;
 GO
+
 ---------------COMPROBACION----------------------
 
 -- AL HACER UN NUEVO VIAJE SE VERIFICA SI SE TIENE DISPONIBILIDAD = 1 POR TANTO PERMITE LA INSERCCION
