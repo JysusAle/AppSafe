@@ -2,8 +2,7 @@
 
 ---------------creaBase DDL-------------
 
-Autores:
-
+Autores: Equipo 1 de 3
 
 
 Fecha: 11/05/2025

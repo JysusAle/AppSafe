@@ -46,7 +46,24 @@ DELETE FROM INTERACCION.TARJETA;
 DELETE FROM BANCO;
 DELETE FROM PERSONA.USUARIO;
 
+
+/***************************************
+
+---------------creaBase DDL-------------
+
+Autores: Equipo 1 de 3
 -- Reinicia los valores de las columnas IDENTITY en las tablas
+-- Carga Inicial de Datos
+--Autores: Equipo 1 de 3
+
+Fecha: 11/05/2025
+
+Descripcion: Este es el script para poblar la base de datos con datos iniciales,
+
+------------------------------------------
+
+
+******************************************/
 
 -- PERSONA.USUARIO
 DBCC CHECKIDENT ('PERSONA.USUARIO', RESEED, 0);
