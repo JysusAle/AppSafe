@@ -2,7 +2,7 @@
 
 --------------- validaTriggers -----------------
 
-Autores: UNO DE TRES
+Autores: Equipo 1 de 3
 
 Fecha: 11/05/2025
 
@@ -406,7 +406,7 @@ VALUES (1, 2, 1, 1, DATEADD(DAY, 5, GETDATE()), '19.4327', '-99.1333', '-99.1401
 --------------------------------------------------------------------------------------------------------------------------------------
 
 
-
+--=====================================================
 --Nombre: RECORRIDO.trg_ValidarTransicionEstatus
 --Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
 --Descripción: Trigger que valida la transicion entre estatus
