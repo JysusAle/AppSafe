@@ -17,9 +17,10 @@ y/o informes solicitados
 use [APPSAFE_TEAM_UNO_DE_TRES]
 go
 
-
-declare @fecha_inicio date='01-01-2023';
-declare @fecha_fin date='01-02-2024';
+select * from Persona.Conductor;
+select * from Recorrido.Viaje;
+declare @fecha_inicio date='2000-01-01';
+declare @fecha_fin date='2025-12-30';
 SELECT 
     CAST(fecha_solicitud AS date) AS 'Fecha Solicitud',
     nombre_pila AS 'Nombre',
@@ -35,7 +36,7 @@ SELECT
 		ON viaje.ID_VEHICULO = vehiculo.ID_VEHICULO
 	JOIN RECORRIDO.ACEPTADO AS aceptado 
 		ON aceptado.id_viaje = viaje.id_viaje
-	WHERE (CAST(fecha_solicitud AS date) BETWEEN @fecha_inicio AND @fecha_fin) 
+	--WHERE (CAST(fecha_solicitud AS date) BETWEEN @fecha_inicio AND @fecha_fin) 
 	GROUP BY 
 		CAST(fecha_solicitud AS date),
 		nombre_pila,
@@ -45,18 +46,32 @@ SELECT
 
 --2. Consolidado mensual; día, monto total, monto mensual
 
-select FORMAT(HORA_INICIO_CURSO,'mm-yyyy') as Fecha,
-	   DAY(HORA_INICIO_CURSO) as 'Día',
-	   SUM(IMPORTE) as 'Monto del Día',
-	   SUM(SUM(IMPORTE)) as 'Monto Mensual'
-	   where (CAST(HORA_INICIO_CURSO AS date) BETWEEN @fecha_inicio AND @fecha_fin)
-from RECORRIDO.ACEPTADO
 
+
+select * from recorrido.aceptado;
+declare @fecha_inicio date='2025-01-01';
+declare @fecha_fin date='2025-01-30';
+SELECT 
+    Fecha,
+    ImporteTotalPorDia,
+    SUM(ImporteTotalPorDia) OVER (ORDER BY Fecha) AS ImporteAcumulado
+FROM (
+    SELECT 
+        CAST(HORA_INICIO_CURSO AS DATE) AS Fecha,
+        SUM(IMPORTE) AS ImporteTotalPorDia
+    FROM 
+        RECORRIDO.ACEPTADO
+    GROUP BY 
+        CAST(HORA_INICIO_CURSO AS DATE)
+) AS TotalesPorDia
+WHERE Fecha between @fecha_inicio and @fecha_fin
+ORDER BY 
+    Fecha;
 --3. Top 5 de conductores por un periodo de tiempo
 
 
-declare @fecha_inicio date='01-01-2023';
-declare @fecha_fin date='01-02-2024';
+declare @fecha_inicio date='2000-01-01';
+declare @fecha_fin date='2025-12-30';
 SELECT TOP 5 
     usu.NOMBRE_PILA AS 'Nombre',
     usu.APELLIDOP AS 'Apellido Paterno',
@@ -81,7 +96,18 @@ SELECT TOP 5
 		AVG(acept.CALIFICACION_CONDUCTOR) DESC
 	
 --4. Top 5 de clientes, es decir, los clientes con mayor número de viajes (nombre completo y correo)
-
+--Muestra de que hay usuarios con menos de 2
+select top 10 usu.NOMBRE_PILA as 'Nombres',
+	usu.APELLIDOP as 'Apellido Paterno',
+	ISNULL(usu.APELLIDOM,'sin apellido materno') as 'Apellido Materno',
+	count(acept.ID_ACEPTADO) as 'Número de viajes'
+	from RECORRIDO.ACEPTADO as acept
+	join RECORRIDO.VIAJE as viaje
+		on acept.ID_VIAJE=viaje.ID_VIAJE
+	join PERSONA.USUARIO as usu
+		on usu.ID_USUARIO=viaje.ID_USUARIO
+	group by usu.NOMBRE_PILA,usu.APELLIDOP,usu.APELLIDOM,usu.ID_USUARIO
+	order by count(acept.ID_ACEPTADO) desc
 select top 5 usu.NOMBRE_PILA as 'Nombres',
 	usu.APELLIDOP as 'Apellido Paterno',
 	ISNULL(usu.APELLIDOM,'sin apellido materno') as 'Apellido Materno',
@@ -118,9 +144,8 @@ select top 5 usu.NOMBRE_PILA as 'Nombres',
 --día o un periodo de tiempo.
 
 
-
-declare @fecha_inicio date='01-01-2023';
-declare @fecha_fin date='01-02-2024';
+declare @fecha_inicio date='2000-01-01';
+declare @fecha_fin date='2027-01-01';
 select
 	ac.FECHA_INCIDENTE as 'Fecha de Incidente',
 	dir.CIUDAD as 'Ciudad',
@@ -157,9 +182,30 @@ select
 			on usu.ID_USUARIO=driver.ID_USUARIO
 		join MODELO 
 			on MODELO.ID_MODELO=coche.ID_MODELO
-    	where ac.Fecha_Incidente between @Fecha_Inicio and $Fecha_Fin 
+    	where ac.Fecha_Incidente between @Fecha_Inicio and @Fecha_Fin 
 
 --7. Listado de los clientes con menos estrellas
+
+
+SELECT
+    usu.NOMBRE_PILA AS 'Nombre',
+    usu.APELLIDOP AS 'Apellido Paterno',
+    ISNULL(usu.APELLIDOM, 'sin apellido materno') AS 'Apellido Materno',
+    AVG(acept.CALIFICACION_USUARIO) AS 'Calificación Promedio'
+	FROM RECORRIDO.ACEPTADO AS acept
+	JOIN RECORRIDO.VIAJE AS viaje
+		ON acept.ID_VIAJE = viaje.ID_VIAJE
+	JOIN PERSONA.USUARIO AS usu
+		ON viaje.ID_USUARIO =usu.ID_USUARIO 
+	GROUP BY 
+		usu.NOMBRE_PILA,
+		usu.APELLIDOP,
+		usu.APELLIDOM,
+		usu.ID_USUARIO
+	ORDER BY 
+		AVG(acept.CALIFICACION_USUARIO) asc
+
+
 
 --8. Listado de los conductores con el total que les han dado por cada estrella
 
@@ -183,7 +229,7 @@ select
 
 --9. Listado de autos, placa, número de serie, marca, modelo, año y color y su dueño
 
-select NUMPLACA as 'Número de placa',
+select NUM_PLACA as 'Número de placa',
 	mark.MARCA as 'Marca',
 	model.MODELO as 'Modelo',
 	year_auto as 'Año del auto',
@@ -203,9 +249,10 @@ select NUMPLACA as 'Número de placa',
 --10. Listado de quejas incluyendo el conductor y auto, con filtro para obtenerse por un periodo de tiempo o por
 --conductor
 
+select * from INTERACCION.QUEJA;
 
-declare @fecha_inicio date='01-01-2023';
-declare @fecha_fin date='01-02-2024';
+declare @fecha_inicio date='2000-01-01';
+declare @fecha_fin date='2027-01-01';
 select qm.descripcion as 'Queja',
 	usu.NOMBRE_PILA as 'Nombres',
 	usu.APELLIDOP as 'Apellido Paterno',
@@ -220,4 +267,12 @@ select qm.descripcion as 'Queja',
 		on qm.id_motivo_queja=q.id_motivo_queja
 	join MODELO
 		on v.ID_MODELO=MODELO.ID_MODELO
-	where ac.Fecha_Incidente between @Fecha_Inicio and $Fecha_Fin
+	where q.FECHA_EMISION between @Fecha_Inicio and @Fecha_Fin
+
+	
+	
+	
+
+	
+		
+    	
