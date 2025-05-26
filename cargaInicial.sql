@@ -17,7 +17,7 @@ contiene los inserts necesarios para cargar los datos
 use [APPSAFE_TEAM_UNO_DE_TRES]
 go
 
-BEGIN TRAN
+
 
 -- Reinicia los valores de las columnas IDENTITY en las tablas
 
@@ -797,12 +797,13 @@ INSERT INTO DIRECCION (CALLE, NUM_EXTERIOR, CIUDAD) VALUES ('Calle Independencia
 INSERT INTO DIRECCION (CALLE, NUM_EXTERIOR, CIUDAD) VALUES ('Av. Revolución', 555, 'Tijuana');
 INSERT INTO DIRECCION (CALLE, NUM_EXTERIOR, CIUDAD) VALUES ('Av. Lázaro Cárdenas', 876, 'León');
 
+
 INSERT INTO RECORRIDO.ACEPTADO 
 (ID_VIAJE, COMENTARIOS, PROPINA, CALIFICACION_CONDUCTOR, CALIFICACION_USUARIO, HORA_INICIO_CURSO, ID_ETIQUETA_ACEPTADO, IMPORTE)
 VALUES
 (18, 'Buen servicio, sin problemas.', 10.00, 5, 5, '2025-01-15 10:00:00', 1, 150.00),
-(19, 'Conductor llegó tarde.', 0.00, 3, 4, '2025-02-18 11:30:00', 2, 200.00),
-(20, 'Vehículo limpio y conductor amable.', 15.00, 5, 5, '2025-03-20 09:15:00', 1, 250.00),
+(19, 'Conductor llegó tarde.', 0.00, 3, 4, '2025-01-11 11:30:00', 2, 200.00),
+(20, 'Vehículo limpio y conductor amable.', 15.00, 5, 5, '2025-01-20 09:15:00', 1, 250.00),
 (21, 'Ruta más larga de lo necesario.', 0.00, 2, 3, '2025-04-25 12:45:00', 3, 300.00),
 (22, 'Conductor fue grosero.', 0.00, 1, 2, '2025-05-12 14:00:00', 3, 350.00),
 (23, 'Servicio aceptable.', 10.00, 4, 4, '2025-06-18 10:00:00', 1, 400.00),
@@ -847,4 +848,3 @@ VALUES (9, GETDATE(), 0, 2200.00, 0, 9, 'Cristal roto por caída de objeto',27);
 INSERT INTO RECORRIDO.ACCIDENTE (ID_TIPO_ACCIDENTE, FECHA_INCIDENTE, HERIDOS, MONTO_GASTADO, CONDUCTOR_RESPONSABLE, UBICACION, DESCRIPCION,ID_ACEPTADO)
 VALUES (10, GETDATE(), 0, 3600.00, 1, 10, 'Golpe lateral en estacionamiento',28);
 
-ROLLBACK TRAN
