@@ -2,7 +2,7 @@
 
 --------------- validaTriggers -----------------
 
-Autores: 
+Autores: UNO DE TRES
 
 Fecha: 11/05/2025
 
@@ -20,7 +20,14 @@ go
 
 
 -----------------------------------------------------------------
---El trigger trg_jerarquiaU tiene el propósito de validar cambios en el tipo de usuario en la tabla PERSONA.USUARIO
+
+
+--====================================================
+--Nombre: PERSONA.trg_jerarquiaU
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: El trigger trg_jerarquiaU tiene el propósito de validar cambios en el tipo de usuario en la tabla PERSONA.USUARIO
+--Fecha de elaboración: 25/05/2025
+--====================================================
 
 CREATE TRIGGER trg_jerarquiaU
 ON PERSONA.USUARIO
@@ -85,7 +92,14 @@ WHERE ID_USUARIO = (SELECT * FROM PERSONA.USUARIO
 WHERE APELLIDOP = 'TENORIO' AND NOMBRE_PILA = 'JESUS' AND APELLIDOM = 'MARTINEZ')
 
 --------------------------------------------------------
--- Crea el trigger llamado 'trg_limitar_tarjetas' dentro del esquema INTERACCION
+
+
+--====================================================
+--Nombre: INTERACCION.trg_limitando_tarjeta_a_3
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Crea el trigger llamado 'trg_limitar_tarjetas' dentro del esquema INTERACCION
+--Fecha de elaboración: 24/05/2025
+--====================================================
 
 create trigger INTERACCION.trg_limitando_tarjeta_a_3
 on INTERACCION.TARJETA
@@ -136,7 +150,13 @@ SELECT * FROM PERSONA.USUARIO
 
 -----------------------------------------------------------------------------------------------------------------
 
--------Validamos que el usuario en la jerarquia sea del tipo correcto para administradores
+
+--====================================================
+--Nombre: PERSONA.trg_jerarquiaA
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Validamos que el usuario en la jerarquia sea del tipo correcto para administradores
+--Fecha de elaboración: 24/05/2025
+--====================================================
 
 CREATE TRIGGER trg_jerarquiaA
 ON PERSONA.ADMINISTRADOR
@@ -183,7 +203,13 @@ insert into persona.ADMINISTRADOR values ((SELECT TOP 1 ID_USUARIO FROM PERSONA.
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 
---- Trigers que valida que la jerarquia tenga el tipo de usuario correcto para conductores 
+
+--====================================================
+--Nombre: PERSONA.trg_jerarquiaC
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Trigers que valida que la jerarquia tenga el tipo de usuario correcto para conductores 
+--Fecha de elaboración: 23/05/2025
+--====================================================
 
 CREATE TRIGGER trg_jerarquiaC
 ON PERSONA.CONDUCTOR
@@ -228,9 +254,13 @@ insert into persona.CONDUCTOR values ((SELECT TOP 1 ID_USUARIO FROM PERSONA.USUA
 
 -------------------------------------------------------
 
---- Limitar numero de autos por conductor a 2
 
-DROP TRIGGER trg_validar_auto
+--====================================================
+--Nombre: trg_validar_auto
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Limitar numero de autos por conductor a 2
+--Fecha de elaboración: 23/05/2025
+--====================================================
 
 CREATE TRIGGER trg_validar_auto
 ON VEHICULO
@@ -319,7 +349,14 @@ ORDER BY C.ID_USUARIO), 5, 'MNR445', 2024, 1, 5)
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
----Trigger que verifica que la solicitud no exceda mas de dos dias 
+
+
+--====================================================
+--Nombre: RECORRIDO.trg_FechaSolicitud
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Trigger que verifica que la solicitud no exceda mas de dos dias 
+--Fecha de elaboración: 24/05/2025
+--====================================================
 CREATE TRIGGER trg_FechaSolicitud
 ON RECORRIDO.VIAJE
 AFTER INSERT, UPDATE
@@ -368,8 +405,13 @@ VALUES (1, 2, 1, 1, DATEADD(DAY, 5, GETDATE()), '19.4327', '-99.1333', '-99.1401
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
----Trigger que valida la transicion entre estatus
 
+
+--Nombre: RECORRIDO.trg_ValidarTransicionEstatus
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Trigger que valida la transicion entre estatus
+--Fecha de elaboración: 25/05/2025
+--====================================================
 CREATE TRIGGER trg_ValidarTransicionEstatus
 ON RECORRIDO.ESTATUS_VIAJE
 AFTER INSERT, UPDATE
@@ -550,48 +592,108 @@ ORDER BY FECHA_SOLICITUD DESC), 5, GETDATE());
 select * from RECORRIDO.ESTATUS
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
---- Triger que impida crear la tabla aceptado hasta que el estatus tome el valor de aceptado
-CREATE TRIGGER trg_aceptado --PENDIENTE
+--====================================================
+--Nombre: RECORRIDO.trg_aceptado
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: triger que impida crear la tabla aceptado hasta que el estatus tome el valor de aceptado
+--Fecha de elaboración: 24/05/2025
+--====================================================
+CREATE TRIGGER trg_aceptado 
 ON RECORRIDO.ACEPTADO
 INSTEAD OF INSERT
 AS
 BEGIN
-    
     SET NOCOUNT ON;
-	DECLARE @NotAcept NVARCHAR(100);
-	DECLARE @MESSAGE_ERROR NVARCHAR(MAX);
 
-    WITH USERS AS (
-        SELECT i.ID_USUARIO, i.ID_VIAJE
-        FROM INSERTED i
-        JOIN ESTATUS_VIAJE ev
-        ON i.ID_VIAJE = ev.ID_VIAJE
-        WHERE NOMBRE_ESTATUS = "C" 
+    DECLARE @NotAcept NVARCHAR(200);
+    DECLARE @MESSAGE_ERROR NVARCHAR(MAX);
+
+    -- CTE para obtener viajes válidos con estatus 'C' y su usuario
+    WITH VIAJES_CONFIRMADOS AS (
+        SELECT v.ID_VIAJE, v.ID_USUARIO
+        FROM RECORRIDO.VIAJE v
+        JOIN RECORRIDO.ESTATUS_VIAJE ev ON v.ID_VIAJE = ev.ID_VIAJE
+        JOIN RECORRIDO.ESTATUS e ON ev.CLAVE_ESTATUS = e.CLAVE_ESTATUS
+        WHERE e.NOMBRE_ESTATUS = 'C'
     )
 
-  
-    SELECT @NotAcept = STRING_AGG(CAST(ID_VIAJE AS NVARCHAR(5)), ', ')
+    -- Detectamos los viajes que no están confirmados
+    SELECT @NotAcept = STRING_AGG(CAST(i.ID_VIAJE AS NVARCHAR(5)), ', ')
     FROM INSERTED i
-    WHERE i.ID_VIAJE NOT IN (SELECT ID_VIAJE FROM USERS)
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM VIAJES_CONFIRMADOS vc
+        WHERE vc.ID_VIAJE = i.ID_VIAJE
+    );
+
     IF @NotAcept IS NOT NULL
     BEGIN
-		SET @MESSAGE_ERROR = 'Los siguientes viajes no cuentan con el estatus de aceptado: ' + @NotAcept;
+        SET @MESSAGE_ERROR = 'Los siguientes viajes no cuentan con el estatus de confirmado (C): ' + @NotAcept;
         THROW 51010, @MESSAGE_ERROR, 1;
         RETURN;
-    END
+    END;
 
+    -- Si todo es válido, se realiza la inserción
+    INSERT INTO RECORRIDO.ACEPTADO (
+        ID_VIAJE, COMENTARIOS, PROPINA, CALIFICACION_CONDUCTOR,
+        CALIFICACION_USUARIO, HORA_INICIO_CURSO, ID_ETIQUETA_ACEPTADO, IMPORTE
+    )
+    SELECT 
+        ID_VIAJE, COMENTARIOS, PROPINA, CALIFICACION_CONDUCTOR,
+        CALIFICACION_USUARIO, HORA_INICIO_CURSO, ID_ETIQUETA_ACEPTADO, IMPORTE
+    FROM INSERTED;
 END;
 GO
+
+
 ------------COMPROBACION---------------------------------------------------------
 
-SELECT P.ID_VIAJE
-FROM RECORRIDO.VIAJE P
-INNER JOIN RECORRIDO.ESTATUS E ON P.CLAVE_ACTUAL = E.CLAVE_ESTATUS
-WHERE NOMBRE_ESTATUS = 'T'
+
+INSERT INTO RECORRIDO.VIAJE (ID_FACTURA, ID_VEHICULO, CLAVE_ACTUAL, ID_USUARIO, FECHA_SOLICITUD, LATITUD_DESTINO, LONGITUD_DESTINO, LONGITUD_ORIGEN, LATITUD_ORIGEN, TIPO, TIPO_PAGO, TARJETA_CLIENTE) 
+VALUES (NULL, 1, 1, 20, GETDATE(), '19.4326', '-99.1332', '-99.1400', '19.4400', 'N', 'T', '1234567890123456');
+
+-- EN ESTE INSERT RECHAZA LA INSERCCION
+INSERT INTO RECORRIDO.ACEPTADO (
+    ID_VIAJE, COMENTARIOS, PROPINA, CALIFICACION_CONDUCTOR,
+    CALIFICACION_USUARIO, HORA_INICIO_CURSO, ID_ETIQUETA_ACEPTADO, IMPORTE
+)
+VALUES (
+    (SELECT TOP 1 ID_VIAJE FROM RECORRIDO.VIAJE ORDER BY FECHA_SOLICITUD DESC),
+	'Buen servicio', 10, 5, 4, GETDATE(), NULL, 150.00
+);
+
+INSERT INTO RECORRIDO.ESTATUS_VIAJE (CLAVE_ESTATUS, ID_VIAJE, FECHA_ESTATUS) VALUES (1, 
+	(SELECT TOP 1 ID_VIAJE FROM RECORRIDO.VIAJE ORDER BY FECHA_SOLICITUD DESC), 
+	GETDATE());
+
+INSERT INTO RECORRIDO.ESTATUS_VIAJE (CLAVE_ESTATUS, ID_VIAJE, FECHA_ESTATUS) VALUES (2, 
+	(SELECT TOP 1 ID_VIAJE FROM RECORRIDO.VIAJE ORDER BY FECHA_SOLICITUD DESC), 
+	GETDATE());
+
+INSERT INTO RECORRIDO.ESTATUS_VIAJE (CLAVE_ESTATUS, ID_VIAJE, FECHA_ESTATUS) VALUES (3, 
+	(SELECT TOP 1 ID_VIAJE FROM RECORRIDO.VIAJE ORDER BY FECHA_SOLICITUD DESC), 
+	GETDATE());
+
+-- DESPUES YA PODREMOS HACER LA INSERCCION
+
+INSERT INTO RECORRIDO.ACEPTADO (
+    ID_VIAJE, COMENTARIOS, PROPINA, CALIFICACION_CONDUCTOR,
+    CALIFICACION_USUARIO, HORA_INICIO_CURSO, ID_ETIQUETA_ACEPTADO, IMPORTE
+)
+VALUES (
+    (SELECT TOP 1 ID_VIAJE FROM RECORRIDO.VIAJE ORDER BY FECHA_SOLICITUD DESC),
+	'Buen servicio', 10, 5, 4, GETDATE(), NULL, 150.00
+);
+
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
---Este trigger verifica que un administrador no pueda actualizar quejas relacionadas consigo mismo
+--====================================================
+--Nombre: INTERACCION.trg_queja_administrador
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Este trigger verifica que un administrador no pueda actualizar quejas relacionadas consigo mismo
+--Fecha de elaboración: 23/05/2025
+--====================================================
 CREATE TRIGGER trg_queja_administrador
 ON INTERACCION.QUEJA 
 AFTER INSERT, UPDATE 
@@ -628,10 +730,13 @@ INSERT INTO INTERACCION.QUEJA (ID_USUARIO, ID_VEHICULO, ID_ADMINISTRADOR, ID_MOT
 --------------------------------------------------------------------------------------------------------------------------------------
 
 
-
----------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Triger que valide que el usuario que tenga la queja tenga relación con el conductor     
+ 
+--====================================================
+--Nombre: INTERACCION.trg_queja_relacion
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Triger que valide que el usuario que tenga la queja tenga relación con el conductor  
+--Fecha de elaboración: 24/05/2025
+--====================================================
 CREATE TRIGGER trg_queja_relacion
 ON INTERACCION.QUEJA
 INSTEAD OF INSERT 
@@ -719,7 +824,14 @@ INNER JOIN VEHICULO H ON H.ID_VEHICULO = V.ID_VEHICULO), 2, 1, 1, 'MOTIVO', '202
 -----------------------------------------------------------------------
 
 
---- Triger para la queja no tarde en resolverse más de 5 días
+
+
+--====================================================
+--Nombre: trg_resolucion
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Triger para la queja no tarde en resolverse más de 5 días
+--Fecha de elaboración: 25/05/2025
+--====================================================
 
 CREATE TRIGGER trg_resolucion
 ON RESOLUCION
@@ -759,7 +871,13 @@ INSERT INTO RESOLUCION (ID_QUEJA, DESCRIPCION_RESOLUCION, FECHA_ATENDIDO) VALUES
 -----------------------------------------------------
 
 
---- Triger para que el sistema solo asigne viajes a vehiculos disponibles
+--====================================================
+--Nombre: trg_disponibilidad
+--Autores: TENORIO MARTINEZ JESUS ALEJANDRO, SALAZAR ISLAS LUIS DANIEL Y ARAIZA VALDEZ DIEGO ANTONIO
+--Descripción: Triger para que el sistema solo asigne viajes a vehiculos disponibles
+--Fecha de elaboración: 25/05/2025
+--====================================================
+
 CREATE TRIGGER trg_disponibilidad
 ON RECORRIDO.VIAJE
 AFTER INSERT, UPDATE
@@ -790,3 +908,15 @@ BEGIN
     END;
 END;
 GO
+---------------COMPROBACION----------------------
+
+-- AL HACER UN NUEVO VIAJE SE VERIFICA SI SE TIENE DISPONIBILIDAD = 1 POR TANTO PERMITE LA INSERCCION
+
+INSERT INTO RECORRIDO.VIAJE VALUES (NULL, (SELECT TOP 1 ID_VEHICULO FROM VEHICULO WHERE DISPONIBLE = 1), 1, 10, GETDATE(), '19.4270', '-99.1276', '-99.1332', '19.4326', 'P', 'E', '1234562480123401');
+
+
+-- AL HACER UN NUEVO VIAJE SE VERIFICA SI SE TIENE DISPONIBILIDAD = 0 POR TANTO NO PERMITE LA INSERCCION
+
+INSERT INTO RECORRIDO.VIAJE VALUES (NULL, (SELECT TOP 1 ID_VEHICULO FROM VEHICULO WHERE DISPONIBLE = 0), 1, 10, GETDATE(), '19.4270', '-99.1276', '-99.1332', '19.4326', 'P', 'E', '1234562480123401');
+
+-------------------------------------------------
