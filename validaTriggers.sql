@@ -1,4 +1,4 @@
-/***************************************
+
 
 --------------- validaTriggers -----------------
 
@@ -547,6 +547,7 @@ BEGIN
 		ON i.ID_QUEJA = q.ID_QUEJA
 		WHERE DATEDIFF(DAY,FECHA_EMISION,GETDATE()) <= 5
 	)
+
 	SELECT @QUEJAS_ERROR = STRING_AGG(CAST(i.ID_QUEJA AS NVARCHAR(10)), ', ')
     FROM INSERTED i
 
@@ -565,4 +566,41 @@ INSERT INTO RESOLUCION (ID_QUEJA, DESCRIPCION_RESOLUCION, FECHA_ATENDIDO) VALUES
 
 select * from INTERACCION.QUEJA
 
+-----------------------------------------------------
+
+--- Triger para que el sistema solo asigne viajes a vehiculos disponibles
+CREATE TRIGGER trg_disponibilidad
+ON RECORRIDO.VIAJE
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @VehiculosNoDisponibles NVARCHAR(MAX);
+    DECLARE @MensajeError NVARCHAR(MAX);
+
+    WITH VehiculosNoDisponibles AS (
+        SELECT i.ID_VEHICULO
+        FROM INSERTED i
+        JOIN VEHICULO v
+        ON i.ID_VEHICULO = v.ID_VEHICULO
+        WHERE v.DISPONIBLE = 0
+    )
+
+    SELECT @VehiculosNoDisponibles = STRING_AGG(CAST(ID_VEHICULO AS NVARCHAR(10)), ', ')
+    FROM VehiculosNoDisponibles;
+
+    IF @VehiculosNoDisponibles IS NOT NULL
+    BEGIN
+        ROLLBACK TRANSACTION;
+        SET @MensajeError = 'Los siguientes vehículos no están disponibles: ' + @VehiculosNoDisponibles;
+        THROW 51012, @MensajeError, 1;
+        RETURN;
+    END;
+END;
+GO
+-----------------COMPROBACION-------------------------
+INSERT INTO RECORRIDO.VIAJE (ID_VIAJE, ID_VEHICULO, ID_USUARIO, FECHA_SOLICITUD, TIPO, CLAVE_ACTUAL) VALUES (1, 1, 4, '2025-01-20', 'N', 'S');
+SELECT * FROM RECORRIDO.VIAJE
+SELECT * FROM VEHICULO
 -----------------------------------------------------
