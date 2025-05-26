@@ -24,6 +24,11 @@ GO
 -- Conceder permisos a los roles
 GRANT CONTROL ON DATABASE::[APPSAFE_TEAM_UNO_DE_TRES] TO RolAdministradorAppSafe;
 
+ALTER AUTHORIZATION ON SCHEMA::PERSONA TO RolAdministradorAppSafe;
+ALTER AUTHORIZATION ON SCHEMA::RECORRIDO TO RolAdministradorAppSafe;
+ALTER AUTHORIZATION ON SCHEMA::INTERACCION TO RolAdministradorAppSafe;
+GO
+
 GRANT SELECT ON SCHEMA::[interaccion] TO RolLecturaAppSafe;
 GRANT SELECT ON SCHEMA::[persona] TO RolLecturaAppSafe;
 GRANT SELECT ON SCHEMA::[recorrido] TO RolLecturaAppSafe;
@@ -53,4 +58,3 @@ GO
 ALTER ROLE RolAdministradorAppSafe ADD MEMBER AdminAppSafe;
 ALTER ROLE RolLecturaAppSafe ADD MEMBER LecAppSafe;
 GO
-
